@@ -14,23 +14,31 @@
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
 
 void updateLED(int x, int y) {
-    if (x > 3000) {  // back
-        strip.setPixelColor(3, 255, 255, 255);
+    if (x > 2000) {  // back
+        double norm = (x - 2000.0) / 2095.0 * 255.0;
+        int int_norm = static_cast<int>(norm);
+        strip.setPixelColor(3, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(3, 0, 0, 0);
     }
-    if (x < 1000) {  // forward
-        strip.setPixelColor(2, 255, 255, 255);
+    if (x < 1500) {  // forward
+        double norm = (x - 1500.0) / -1500.0 * 255.0;
+        int int_norm = static_cast<int>(norm);
+        strip.setPixelColor(2, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(2, 0, 0, 0);
     }
-    if (y > 3000) {  // right
-        strip.setPixelColor(1, 255, 255, 255);
+    if (y > 2000) {  // right
+        double norm = (y - 2000.0) / 2095.0 * 255.0;
+        int int_norm = static_cast<int>(norm);
+        strip.setPixelColor(1, int_norm, int_norm, int_norm);
     } else {                
         strip.setPixelColor(1, 0, 0, 0);
     }
-    if (y < 1000) { // left
-        strip.setPixelColor(0, 255, 255, 255);
+    if (y < 1500) { // left
+        double norm = (y - 1500.0) / -1500.0 * 255.0;
+        int int_norm = static_cast<int>(norm);
+        strip.setPixelColor(0, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(0, 0, 0, 0);
     }
@@ -84,5 +92,5 @@ void loop(void) {
         }
         http.end();
     }
-    delay(500);
+    delay(100);
 }
