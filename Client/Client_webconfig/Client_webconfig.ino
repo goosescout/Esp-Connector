@@ -27,7 +27,6 @@ void setup(void) {
     Serial.println(WiFi.localIP());
 
     strip.begin();
-    strip.setPixelColor(2, 255, 255, 255);
     strip.show();
 }
 
@@ -39,8 +38,6 @@ void loop(void) {
         int httpCode = http.GET();
         if (httpCode > 0) {
             String payload = http.getString();
-            Serial.print("Message recieved: ");
-            Serial.println(payload);
 
             String x, y;
             bool write_to_x = true;
@@ -57,10 +54,6 @@ void loop(void) {
             }
             x = x.toInt();
             y = y.toInt();
-            Serial.print("X: ");
-            Serial.print(x);
-            Serial.print(" Y: ");
-            Serial.println(y);
         } else {
             Serial.print("Error: ");
             Serial.println(httpCode);
@@ -68,4 +61,6 @@ void loop(void) {
         http.end();
     }
     delay(500);
+    strip.setPixelColor(2, 255, 255, 255);
+    strip.show();
 }
