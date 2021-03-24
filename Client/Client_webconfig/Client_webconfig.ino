@@ -2,10 +2,16 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 
+#include <Adafruit_NeoPixel.h>
+
 #define SERVER_NAME "ESP32_server"
 #define SERVER_PASSWORD "#PhVWEK8Msjvk"
 
 #define SERVER_ACCESS "http://192.168.4.1/"
+
+#define LED_PIN 2
+#define LED_COUNT 4
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
 
 void setup(void) {
     Serial.begin(115200);
@@ -19,6 +25,10 @@ void setup(void) {
     Serial.println("");
     Serial.print("Connected to WiFi network with IP Address: ");
     Serial.println(WiFi.localIP());
+
+    strip.begin();
+    strip.setPixelColor(2, 255, 255, 255);
+    strip.show();
 }
 
 void loop(void) {
@@ -31,8 +41,31 @@ void loop(void) {
             String payload = http.getString();
             Serial.print("Message recieved: ");
             Serial.println(payload);
+
+            String x, y;
+            bool write_to_x = true;
+
+            for (int i = 0; i < payload.length(); i++) {
+                char symbol = payload[i];
+                if (symbol == ' ') {
+                    write_to_x = false;
+                } else if (write_to_x) {
+                    x = x + symbol;
+                } else {
+                    y = y + symbol;
+                }
+            }
+            x = x.toInt();
+            y = y.toInt();
+            Serial.print("X: ");
+            Serial.print(x);
+            Serial.print(" Y: ");
+            Serial.println(y);
+        } else {
+            Serial.print("Error: ");
+            Serial.println(httpCode);
         }
         http.end();
     }
-    delay(1000);
+    delay(500);
 }
