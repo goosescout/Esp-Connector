@@ -9,9 +9,17 @@
 
 #define SERVER_ACCESS "http://192.168.4.1/"
 
-#define LED_PIN 2
+#define LED_PIN 9
 #define LED_COUNT 4
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
+
+#define ENGINE_PIN 10
+#define SOLAR_ENABLE_PIN 15
+#define ANT_PIN 14
+
+#define SOLAR_ANALOG_PIN A0
+
+bool wifi_initialized = false;
 
 void updateLED(int x, int y) {
     if (x > 2000) {  // back
@@ -41,56 +49,108 @@ void updateLED(int x, int y) {
         strip.setPixelColor(0, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(0, 0, 0, 0);
-    }
-    
+    }  
     strip.show();
+}
+
+bool checkEngine() {
+    bool engine_plugged = false;
+    if (digitalRead(ENGINE_PIN) == LOW) {
+        // инициализация светодиодов
+        strip.begin();
+        strip.setPixelColor(0, 0, 0, 0);
+        strip.setPixelColor(1, 0, 0, 0);
+        strip.setPixelColor(2, 0, 0, 0);
+        strip.setPixelColor(3, 0, 0, 0);
+        strip.show();
+
+        engine_plugged = true;
+    }
+    return engine_plugged;
+}
+
+bool checkSolar() {
+    bool solar_plugged = false;
+    // проверка наличия панелей и проверка освещенности
+    if (digitalRead(SOLAR_ENABLE_PIN) == LOW && analogRead(SOLAR_ANALOG_PIN) > 500) {
+        solar_plugged = true;
+    }
+    return solar_plugged;
+}
+
+bool checkAnt() {
+    bool ant_plugged = false;
+    if (digitalRead(ANT_PIN) == LOW) {
+        ant_plugged = true;
+    }
+    return ant_plugged;
+}
+
+void wifiStart() {
+    if (!wifi_initialized) {
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(SERVER_NAME, SERVER_PASSWORD);
+        Serial.print("Connecting...");
+        while (WiFi.status() != WL_CONNECTED) { 
+            delay(500);
+            Serial.print(".");
+        }
+        Serial.println("");
+        Serial.print("Connected to WiFi network with IP Address: ");
+        Serial.println(WiFi.localIP());
+        wifi_initialized = true;
+    }
+}
+
+void wifiStop() {
+    if (wifi_initialized) {
+        WiFi.disconnect();
+        wifi_initialized = false;
+    }
 }
 
 void setup(void) {
     Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SERVER_NAME, SERVER_PASSWORD);
-    Serial.print("Connecting...");
-    while (WiFi.status() != WL_CONNECTED) { 
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("");
-    Serial.print("Connected to WiFi network with IP Address: ");
-    Serial.println(WiFi.localIP());
 
-    strip.begin();
-    strip.show();
+    // инициализация пинов
+    pinMode(ENGINE_PIN, INPUT_PULLUP);
+    pinMode(SOLAR_ENABLE_PIN, INPUT_PULLUP);
+    pinMode(ANT_PIN, INPUT_PULLUP);
 }
 
 void loop(void) {
-    if (WiFi.status() == WL_CONNECTED) {
-        WiFiClient client;
-        HTTPClient http;
-        http.begin(client, SERVER_ACCESS);
-        int httpCode = http.GET();
-        if (httpCode > 0) {
-            String payload = http.getString();
+    if (checkAnt() && checkEngine() && checkSolar()) {
+        wifiStart();
+        if (WiFi.status() == WL_CONNECTED) {
+            WiFiClient client;
+            HTTPClient http;
+            http.begin(client, SERVER_ACCESS);
+            int httpCode = http.GET();
+            if (httpCode > 0) {
+                String payload = http.getString();
 
-            String x, y;
-            bool write_to_x = true;
+                String x, y;
+                bool write_to_x = true;
 
-            for (int i = 0; i < payload.length(); i++) {
-                char symbol = payload[i];
-                if (symbol == ' ') {
-                    write_to_x = false;
-                } else if (write_to_x) {
-                    x = x + symbol;
-                } else {
-                    y = y + symbol;
+                for (int i = 0; i < payload.length(); i++) {
+                    char symbol = payload[i];
+                    if (symbol == ' ') {
+                        write_to_x = false;
+                    } else if (write_to_x) {
+                        x = x + symbol;
+                    } else {
+                        y = y + symbol;
+                    }
                 }
+                updateLED(x.toInt(), y.toInt());
+            } else {
+                Serial.print("Error: ");
+                Serial.println(httpCode);
             }
-            updateLED(x.toInt(), y.toInt());
-        } else {
-            Serial.print("Error: ");
-            Serial.println(httpCode);
+            http.end();
+            delay(50);
         }
-        http.end();
+    } else {
+        wifiStop();
     }
-    delay(100);
 }
