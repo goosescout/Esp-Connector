@@ -23,7 +23,7 @@ bool wifi_initialized = false;
 bool LED_initialized = false;
 
 void updateLED(int x, int y) {
-    const float max_shift = 2000.0, min_shift = 1700.0; // отклонения, после которых включаются светодиоды
+    const float max_shift = 2000.0, min_shift = 1500.0; // отклонения, после которых включаются светодиоды
     if (x > max_shift) {  // left
         double norm = (x - max_shift) / (4095 - max_shift) * 255.0;
         int int_norm = static_cast<int>(norm);
@@ -138,6 +138,11 @@ void setup(void) {
     pinMode(SOLAR_ANALOG_PIN, INPUT_PULLUP);
 
     strip.begin();
+    strip.setPixelColor(0, 0, 0, 0);
+    strip.setPixelColor(1, 0, 0, 0);
+    strip.setPixelColor(2, 0, 0, 0);
+    strip.setPixelColor(3, 0, 0, 0);
+    strip.show();
     Serial.println("LED started");
 }
 
