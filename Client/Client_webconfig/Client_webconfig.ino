@@ -14,8 +14,8 @@
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
 
 #define ENGINE_PIN 4 // TODO: change to 10
-#define SOLAR_ENABLE_PIN 15
-#define ANT_PIN 14
+#define SOLAR_ENABLE_PIN 4 // TODO: change to 15
+#define ANT_PIN 4 // TODO: change to 14
 
 #define SOLAR_ANALOG_PIN A0
 
@@ -23,31 +23,30 @@ bool wifi_initialized = false;
 bool LED_initialized = false;
 
 void updateLED(int x, int y) {
-    Serial.println(x);
-    Serial.println(y);
-    if (x > 2000) {  // back
-        double norm = (x - 2000.0) / 2095.0 * 255.0;
+    const float max_shift = 2000.0, min_shift = 1700.0; // отклонения, после которых включаются светодиоды
+    if (x > max_shift) {  // left
+        double norm = (x - max_shift) / (4095 - max_shift) * 255.0;
         int int_norm = static_cast<int>(norm);
         strip.setPixelColor(3, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(3, 0, 0, 0);
     }
-    if (x < 1500) {  // forward
-        double norm = (x - 1500.0) / -1500.0 * 255.0;
+    if (x < min_shift) {  // right
+        double norm = (x - min_shift) / -min_shift * 255.0;
         int int_norm = static_cast<int>(norm);
         strip.setPixelColor(2, int_norm, int_norm, int_norm);
     } else {
         strip.setPixelColor(2, 0, 0, 0);
     }
-    if (y > 2000) {  // right
-        double norm = (y - 2000.0) / 2095.0 * 255.0;
+    if (y > max_shift) {  // back
+        double norm = (y - max_shift) / (4095 - max_shift) * 255.0;
         int int_norm = static_cast<int>(norm);
         strip.setPixelColor(1, int_norm, int_norm, int_norm);
     } else {                
         strip.setPixelColor(1, 0, 0, 0);
     }
-    if (y < 1500) { // left
-        double norm = (y - 1500.0) / -1500.0 * 255.0;
+    if (y < min_shift) { // forward
+        double norm = (y - min_shift) / -min_shift * 255.0;
         int int_norm = static_cast<int>(norm);
         strip.setPixelColor(0, int_norm, int_norm, int_norm);
     } else {
@@ -72,6 +71,11 @@ bool checkEngine() {
 
         engine_plugged = true;
     } else {
+        strip.setPixelColor(0, 0, 0, 0);
+        strip.setPixelColor(1, 0, 0, 0);
+        strip.setPixelColor(2, 0, 0, 0);
+        strip.setPixelColor(3, 0, 0, 0);
+        strip.show();
         LED_initialized = false;
     }
     return engine_plugged;
@@ -87,7 +91,6 @@ bool checkSolar() {
 }
 
 bool checkAnt() {
-    return true;
     bool ant_plugged = false;
     if (digitalRead(ANT_PIN) == LOW) {
         ant_plugged = true;
@@ -135,6 +138,7 @@ void setup(void) {
     pinMode(SOLAR_ANALOG_PIN, INPUT_PULLUP);
 
     strip.begin();
+    Serial.println("LED started");
 }
 
 void loop(void) {
@@ -167,9 +171,9 @@ void loop(void) {
                 Serial.println(httpCode);
             }
             http.end();
-            delay(50);
         }
     } else {
         wifiStop();
     }
+    delay(50);
 }
